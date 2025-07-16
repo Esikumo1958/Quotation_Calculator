@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#f1c40f">
+
+  <title>Quatation Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: yellow;
+    }
+    input[type="text"], input[type="number"] {
+      padding: 5px;
+      margin: 5px;
+    }
+    .total-row {
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Quotation Generator</h2>
+
+  <form id="itemForm">
+    <input type="text" id="item" placeholder="Item Description" required>
+    <input type="number" id="quantity" placeholder="Quantity Needed" min="1" required>
+    <input type="number" id="unitCost" placeholder="Unit Cost" step="0.01" min="0.01" required>
+    <button type="submit">Add Item</button>
+  </form>
+
+  <table id="outputTable">
+    <thead>
+      <tr>
+        <th>ITEM DESCRIPTION</th>
+        <th>QUANTITY NEEDED PER SET</th>
+        <th>UNIT COST</th>
+        <th>TOTAL COST</th>
+      </tr>
+    </thead>
+    <tbody>
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="3">GRAND TOTAL</td>
+        <td id="grandTotal">0.00</td>
+      </tr>
+    </tfoot>
+  </table>
+  <button onclick="exportTableToExcel('outputTable', 'Item_Costs')">Export to Excel</button>
+
+
+  <script>
+    const form = document.getElementById('itemForm');
+    const tableBody = document.querySelector('#outputTable tbody');
+    const grandTotalEl = document.getElementById('grandTotal');
+
+    let grandTotal = 0;
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+
+      const item = document.getElementById('item').value.trim();
+      const quantity = parseFloat(document.getElementById('quantity').value);
+      const unitCost = parseFloat(document.getElementById('unitCost').value);
+
+      if (quantity <= 0 || unitCost <= 0) {
+        alert('Please enter values greater than 0.');
+        return;
+      }
+
+      const totalCost = quantity * unitCost;
+      grandTotal += totalCost;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${item}</td>
+        <td>${quantity}</td>
+        <td>${unitCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+        <td>${totalCost.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+      `;
+      tableBody.appendChild(row);
+
+      grandTotalEl.textContent = grandTotal.toLocaleString(undefined, {minimumFractionDigits: 2});
+
+      form.reset();    
+    });
+    function exportTableToExcel(tableID, filename = '') {
+  const table = document.getElementById(tableID);
+  const tableHTML = table.outerHTML.replace(/ /g, '%20');
+
+  const dataType = 'application/vnd.ms-excel';
+  filename = filename ? filename + '.xls' : 'excel_data.xls';
+
+  const downloadLink = document.createElement("a");
+  document.body.appendChild(downloadLink);
+
+  if (navigator.msSaveOrOpenBlob) {
+    const blob = new Blob(['\ufeff', tableHTML], { type: dataType });
+    navigator.msSaveOrOpenBlob(blob, filename);
+  } else {
+    downloadLink.href = 'data:' + dataType + ', ' + tableHTML;
+    downloadLink.download = filename;
+    downloadLink.click();
+  }
+
+  document.body.removeChild(downloadLink);
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js')
+      .then(() => console.log("Service Worker Registered"));
+  });
+}
+
+  </script>
+
+</body>
+</html>

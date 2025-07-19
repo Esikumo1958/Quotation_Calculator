@@ -3,53 +3,114 @@
 <head>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#f1c40f">
-
   <title>Quotation Generator</title>
+
   <style>
     body {
       font-family: Arial, sans-serif;
       padding: 20px;
     }
+
+    #google_translate_element {
+      margin-bottom: 15px;
+    }
+
     table {
       border-collapse: collapse;
       width: 100%;
       margin-top: 20px;
     }
+
     th, td {
       border: 1px solid #333;
       padding: 8px;
       text-align: left;
     }
+
     th {
       background-color: yellow;
     }
+
     input[type="text"], input[type="number"] {
       padding: 5px;
       margin: 5px;
     }
+
+    button {
+      background-color: #add8e6;
+      color: #000;
+      border: 1px solid #ccc;
+      margin: 10px 5px;
+      padding: 10px 15px;
+      cursor: pointer;
+      border-radius: 4px;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #d3d3d3;
+    }
+
     .total-row {
       font-weight: bold;
       background-color: #f0f0f0;
     }
+
     td:nth-child(4), td:nth-child(5), tfoot td:last-child {
       text-align: right;
     }
-    button {
-      padding: 5px 10px;
-      margin-top: 10px;
-      background-color: #3498db;
-      color: white;
-      border: none;
-      cursor: pointer;
+
+    @media print {
+      form, button, input, #globalEuroLabel, #google_translate_element {
+        display: none !important;
+      }
+      body {
+        padding: 0;
+        font-size: 12pt;
+      }
+      table {
+        page-break-inside: auto;
+      }
+      thead {
+        display: table-header-group;
+      }
+      tfoot {
+        display: table-footer-group;
+      }
     }
   </style>
+
+  <!-- Google Translate -->
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement(
+        {
+          pageLanguage: 'en',
+          layout: google.translate.TranslateElement.InlineLayout.HORIZONTAL
+        },
+        'google_translate_element'
+      );
+    }
+  </script>
+  <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+  <!-- EmailJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <script>
+    (function () {
+      emailjs.init("WC_U1tB2_Sc4GgHK4"); // Replace with your EmailJS user ID
+    })();
+  </script>
 </head>
 <body>
 
   <h2>Quotation Generator</h2>
 
-  <!-- Global Euro input -->
-  <label for="globalEuro"><strong>Euro Rate:</strong></label>
+  <!-- Language Selector -->
+  <div id="google_translate_element"></div>
+
+  <!-- Global Euro Rate Input -->
+  <label id="globalEuroLabel"><strong>Euro Rate:</strong></label>
   <input type="number" id="globalEuro" placeholder="Enter Euro Rate" step="0.01" min="0.01" required>
   <br><br>
 
@@ -61,7 +122,12 @@
     <button type="submit">Add Item</button>
   </form>
 
-  <!-- Table Output -->
+  <!-- Action Buttons -->
+  <button onclick="window.print()">Print Quotation</button>
+  <button onclick="sendQuotation()">Email Quotation</button>
+  <button onclick="exportTableToExcel('outputTable', 'Item_Costs')">Export to Excel</button>
+
+  <!-- Output Table -->
   <table id="outputTable">
     <thead>
       <tr>
@@ -80,8 +146,6 @@
       </tr>
     </tfoot>
   </table>
-
-  <button onclick="exportTableToExcel('outputTable', 'Item_Costs')">Export to Excel</button>
 
   <script>
     const form = document.getElementById('itemForm');
@@ -119,7 +183,6 @@
 
       grandTotalEl.textContent = grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
-      // Reset only item fields, not euro input
       document.getElementById('item').value = '';
       document.getElementById('quantity').value = '';
       document.getElementById('unitCost').value = '';
@@ -128,7 +191,6 @@
     function exportTableToExcel(tableID, filename = '') {
       const table = document.getElementById(tableID);
       const tableHTML = table.outerHTML.replace(/ /g, '%20');
-
       const dataType = 'application/vnd.ms-excel';
       filename = filename ? filename + '.xls' : 'excel_data.xls';
 
@@ -145,6 +207,23 @@
       }
 
       document.body.removeChild(downloadLink);
+    }
+
+    function sendQuotation() {
+      const tableHTML = document.getElementById('outputTable').outerHTML;
+
+      const params = {
+        to_name: "zesikumo@gmail.com",
+        message: "Here is your quotation:",
+        table_data: tableHTML
+      };
+
+      emailjs.send('service_e604lm8', 'template_e2dnvur', params)
+        .then(function (response) {
+          alert('Quotation sent successfully!');
+        }, function (error) {
+          alert('Failed to send quotation.\n' + JSON.stringify(error));
+        });
     }
 
     if ('serviceWorker' in navigator) {
